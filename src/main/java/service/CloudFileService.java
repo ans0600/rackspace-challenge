@@ -11,18 +11,11 @@ import org.jclouds.io.Payloads;
 import org.jclouds.openstack.swift.v1.features.ObjectApi;
 import org.jclouds.rackspace.cloudfiles.v1.CloudFilesApi;
 import org.jclouds.rackspace.cloudfiles.v1.features.CDNApi;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import request.BaseRequestDataModel;
-
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 
 public class CloudFileService extends BaseService {
-
-	private final Logger slf4jLogger = LoggerFactory
-			.getLogger(CloudFileService.class);
 
 	private static CloudFileService instance = null;
 

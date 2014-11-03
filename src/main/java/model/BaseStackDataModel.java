@@ -16,6 +16,8 @@ public class BaseStackDataModel {
 	
 	protected String cdnUri;
 	
+	protected SSLDataModel sslData;
+	
 	public BaseStackDataModel()
 	{
 		this.serverCreated=new ArrayList<ServerCreated>();
@@ -53,6 +55,14 @@ public class BaseStackDataModel {
 
 	public void setCdnUri(String cdnUri) {
 		this.cdnUri = cdnUri;
+	}
+
+	public SSLDataModel getSslData() {
+		return sslData;
+	}
+
+	public void setSslData(SSLDataModel sslData) {
+		this.sslData = sslData;
 	}
 	
 	

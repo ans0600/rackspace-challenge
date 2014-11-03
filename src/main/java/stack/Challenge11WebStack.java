@@ -64,6 +64,16 @@ public class Challenge11WebStack extends BaseWebStack {
 		slf4jLogger.info("Creating Load Balancer(s) Finished");
 
 	}
+	
+	@Override
+	void createSSLTermination() throws Exception {
+		slf4jLogger.info("Start Creating SSL Termination");
+		int res = this.apiService.createSSLTermination();
+		if (res != WebStackService.SUCCESS)
+			throw new Exception("[Error] Unable to create LB");
+		slf4jLogger.info("Creating SSL Termination Finished");
+		
+	}
 
 	@Override
 	void addInstancesToLB() throws Exception {
@@ -117,7 +127,6 @@ public class Challenge11WebStack extends BaseWebStack {
 
 	@Override
 	void attachDomainToLb() throws Exception {
-		Thread.sleep(5000);
 		slf4jLogger.info("Start Attach Domain To LB");
 		int res = this.apiService.attachDomainToLb();
 		if (res != WebStackService.SUCCESS)
@@ -143,14 +152,13 @@ public class Challenge11WebStack extends BaseWebStack {
 		this.callSequence.add("createInstances");
 		this.callSequence.add("attachStorage");
 		this.callSequence.add("createLB");
-//		// this.callSequence.add("addInstancesToLB");
-//		this.callSequence.add("setUpLBMonitoring");
-//		this.callSequence.add("createCustomLBErrorPage");
+		this.callSequence.add("createSSLTermination");
+		this.callSequence.add("setUpLBMonitoring");
 		this.callSequence.add("attachDomainToLb");
-//		this.callSequence.add("uploadCloudFiles");
-//		this.callSequence.add("enableCDN");
 
 	}
+
+	
 
 	
 

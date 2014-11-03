@@ -60,6 +60,8 @@ public abstract class BaseWebStack {
 	abstract void createLB() throws Exception;
 
 	abstract void addInstancesToLB() throws Exception;
+	
+	abstract void createSSLTermination() throws Exception;
 
 	abstract void setUpLBMonitoring() throws Exception;
 

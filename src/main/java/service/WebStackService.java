@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 import model.BaseStackDataModel;
+import model.SSLDataModel;
 
 import org.jclouds.ContextBuilder;
 import org.jclouds.collect.IterableWithMarker;
@@ -42,6 +43,7 @@ import org.jclouds.rackspace.cloudloadbalancers.v1.domain.AddNode;
 import org.jclouds.rackspace.cloudloadbalancers.v1.domain.CreateLoadBalancer;
 import org.jclouds.rackspace.cloudloadbalancers.v1.domain.HealthMonitor;
 import org.jclouds.rackspace.cloudloadbalancers.v1.domain.LoadBalancer;
+import org.jclouds.rackspace.cloudloadbalancers.v1.domain.SSLTermination;
 import org.jclouds.rackspace.cloudloadbalancers.v1.domain.VirtualIP;
 import org.jclouds.rackspace.cloudloadbalancers.v1.domain.VirtualIP.Type;
 import org.jclouds.rackspace.cloudloadbalancers.v1.domain.VirtualIPWithId;
@@ -50,11 +52,13 @@ import org.jclouds.rackspace.cloudloadbalancers.v1.domain.internal.BaseNode.Cond
 import org.jclouds.rackspace.cloudloadbalancers.v1.features.ErrorPageApi;
 import org.jclouds.rackspace.cloudloadbalancers.v1.features.HealthMonitorApi;
 import org.jclouds.rackspace.cloudloadbalancers.v1.features.LoadBalancerApi;
+import org.jclouds.rackspace.cloudloadbalancers.v1.features.SSLTerminationApi;
 import org.jclouds.rackspace.cloudloadbalancers.v1.predicates.LoadBalancerPredicates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import request.BaseRequestDataModel;
+import utils.SSLUtil;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -75,7 +79,7 @@ public class WebStackService extends BaseService {
 	private CloudDNSApi dnsApiHandler;
 
 	private CinderApi cbsApi;
-	
+
 	private BaseRequestDataModel request;
 
 	private BaseStackDataModel stackData;
@@ -139,13 +143,11 @@ public class WebStackService extends BaseService {
 		ServerApi serverApi = this.apiHandler.getServerApiForZone(this.request
 				.getZone());
 		CreateServerOptions options = CreateServerOptions.Builder
-				.keyPairName(this.request.getKeyPairName())
-				;
-		
-		if(this.request.getNetworkID()!=null)
-		{
-			Set<String> networks=new HashSet<String>();
-			//adding public network first
+				.keyPairName(this.request.getKeyPairName());
+
+		if (this.request.getNetworkID() != null) {
+			Set<String> networks = new HashSet<String>();
+			// adding public network first
 			networks.add("00000000-0000-0000-0000-000000000000");
 			networks.add(this.request.getNetworkID());
 			options.networks(networks);
@@ -196,7 +198,7 @@ public class WebStackService extends BaseService {
 					.getZone());
 
 			CreateVolumeOptions options = CreateVolumeOptions.Builder.name(
-					s.getName()+"_storage").volumeType("SATA");
+					s.getName() + "_storage").volumeType("SATA");
 
 			Volume volume = volumeApi.create(76, options);
 
@@ -208,22 +210,25 @@ public class WebStackService extends BaseService {
 					.attachVolumeToServerAsDevice(volume.getId(), s.getId(),
 							"/dev/sdb");
 
-			slf4jLogger.info("Attaching volume: "+volume.getId()+" to instance "+s.getId());
+			slf4jLogger.info("Attaching volume: " + volume.getId()
+					+ " to instance " + s.getId());
 			// Wait for the volume to become Attached (aka In Use) before moving
 			// on
-			int retry=0;
-			boolean attachSuccess=false;
-			while(retry<RETRY_COUNT)
-			{
+			int retry = 0;
+			boolean attachSuccess = false;
+			while (retry < RETRY_COUNT) {
 				if (!VolumePredicates.awaitInUse(volumeApi).apply(volume)) {
 					retry++;
-					slf4jLogger.error("Attaching status checking failed. Retrying");
+					slf4jLogger
+							.error("Attaching status checking failed. Retrying");
 					continue;
 				}
-				attachSuccess=true;
+				attachSuccess = true;
 				break;
 			}
-			if(attachSuccess)slf4jLogger.info("Attach Complete! Info:"+volumeAttachment.toString());
+			if (attachSuccess)
+				slf4jLogger.info("Attach Complete! Info:"
+						+ volumeAttachment.toString());
 			else
 				slf4jLogger.info("Attach Failed!");
 
@@ -253,6 +258,7 @@ public class WebStackService extends BaseService {
 				.virtualIPType(VirtualIP.Type.PUBLIC).build();
 
 		LoadBalancer loadBalancer = lbApi.create(createLB);
+
 		slf4jLogger.debug("Waiting for LB:" + loadBalancer.getId());
 
 		if (!LoadBalancerPredicates.awaitAvailable(lbApi).apply(loadBalancer)) {
@@ -263,9 +269,50 @@ public class WebStackService extends BaseService {
 		return SUCCESS;
 	}
 
-	public void getAdditionalServerDetails() {
-		if(this.stackData.getServers().size()==0)
+	public int createSSLTermination()
+	{
+		if(this.stackData.getLoadBalancers().size()>0)
 		{
+			//TODO we handle first lb for now
+			LoadBalancer lb=this.stackData.getLoadBalancers().get(0);
+			SSLTerminationApi api=this.lbApiHandler.getSSLTerminationApiForZoneAndLoadBalancer(this.request.getZone(), lb.getId());
+					
+			//generate keys
+			SSLDataModel m=new SSLDataModel();
+			SSLUtil.getSSLCert(this.request.getDomainName(), m);
+			this.stackData.setSslData(m);
+			
+			
+			
+			SSLTermination terminalion=SSLTermination.builder()
+			.securePort(443).secureTrafficOnly(false)
+			.enabled(true)
+			.certificate(m.getCert()).privatekey(m.getPriavetKey())
+			.build();
+					
+			api.createOrUpdate(terminalion);
+			
+			if(!this.awaitLB(lb))return ERROR_LB_CREATION_FAILED;
+			
+		}
+		return SUCCESS;
+		
+	}
+	
+	protected boolean awaitLB(LoadBalancer lb)
+	{
+		slf4jLogger.info("Waiting for LB to get ready");
+		LoadBalancerApi lbApi = this.lbApiHandler
+				.getLoadBalancerApiForZone(this.request.getZone());
+		boolean res= LoadBalancerPredicates.awaitStatus(lbApi, LoadBalancer.Status.ACTIVE, 600L, 10L).apply(lb);
+		if(res)slf4jLogger.info("LB is ready");
+		else slf4jLogger.info("LB is not ready");
+		return res;
+		
+	}
+
+	public void getAdditionalServerDetails() {
+		if (this.stackData.getServers().size() == 0) {
 			for (ServerCreated sc : this.stackData.getServerCreated()) {
 				ServerApi serverApi = this.apiHandler
 						.getServerApiForZone(this.request.getZone());
@@ -273,7 +320,7 @@ public class WebStackService extends BaseService {
 				this.stackData.getServers().add(s);
 			}
 		}
-		
+
 	}
 
 	// public int addServersToLb()
@@ -314,6 +361,8 @@ public class WebStackService extends BaseService {
 				.build();
 
 		healthMonitorApi.createOrUpdate(healthMonitor);
+		
+		if(!this.awaitLB(lb))return ERROR_LB_CREATION_FAILED;
 
 		return SUCCESS;
 
@@ -338,6 +387,8 @@ public class WebStackService extends BaseService {
 		}
 
 		errorPageApi.create(content.replace("\n", "").replace("\r", ""));
+		
+		if(!this.awaitLB(lb))return ERROR_LB_CREATION_FAILED;
 
 		return SUCCESS;
 	}
@@ -407,22 +458,20 @@ public class WebStackService extends BaseService {
 		return SUCCESS;
 
 	}
-	
-	public int createDomain()
-	{
+
+	public int createDomain() {
 		DomainApi domainApi = this.dnsApiHandler.getDomainApi();
 
 		List<CreateDomain> createDomains = Lists.newArrayList();
 		CreateDomain createDomain = CreateDomain.builder()
-		        .name(this.request.getDomainName())
-		        .email("admin@domain.com")
-		        .ttl(300)
-		        .build();
+				.name(this.request.getDomainName()).email("admin@domain.com")
+				.ttl(300).build();
 
 		createDomains.add(createDomain);
-		slf4jLogger.info("Creating Domain:"+this.request.getDomainName());
+		slf4jLogger.info("Creating Domain:" + this.request.getDomainName());
 		try {
-			Set<Domain> domains = JobPredicates.awaitComplete(this.dnsApiHandler, domainApi.create(createDomains));
+			Set<Domain> domains = JobPredicates.awaitComplete(
+					this.dnsApiHandler, domainApi.create(createDomains));
 			for (Domain r : domains) {
 				slf4jLogger.info("Domain Created:" + r.toString());
 			}
@@ -430,7 +479,7 @@ public class WebStackService extends BaseService {
 			return ERROR_DOMAIN_CREATION_FAILED;
 		}
 		return SUCCESS;
-		
+
 	}
 
 }

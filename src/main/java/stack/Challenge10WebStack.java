@@ -56,11 +56,6 @@ public class Challenge10WebStack extends BaseWebStack {
 
 	@Override
 	void addInstancesToLB() throws Exception {
-		// slf4jLogger.info("Start Adding Instance to LB");
-		// int res=this.apiService.addServersToLb();
-		// if(res!=APIService.SUCCESS)throw new Exception
-		// ("[Error] Unable to add instance to LB");
-		// slf4jLogger.info("Adding Instance to LB Finished");
 
 	}
 
@@ -76,27 +71,8 @@ public class Challenge10WebStack extends BaseWebStack {
 
 	@Override
 	void createCustomLBErrorPage() throws Exception {
-		// To-do temporary adding hard sleep here in order to avoid immutable
-		// error
-		Thread.sleep(10000);
 		slf4jLogger.info("Start setting up custom LB Error Page");
-		int retry=0;
-		int res=-1;
-		while(retry<5)
-		{
-			try{
-				res = this.apiService.createCustomLBErrorPage();
-			}catch(Exception e)
-			{
-				slf4jLogger.error(e.getMessage());
-			}
-			
-			if(res==WebStackService.SUCCESS)break;
-			slf4jLogger.info("Unable to set custom error page. Retrying");
-			retry++;
-			Thread.sleep(5000);
-		}
-				
+		int res= this.apiService.createCustomLBErrorPage();
 		if (res != WebStackService.SUCCESS)
 			throw new Exception(
 					"[Error] Unable to create LB custom LB Error Page");
@@ -129,7 +105,6 @@ public class Challenge10WebStack extends BaseWebStack {
 
 	@Override
 	void attachDomainToLb() throws Exception {
-		Thread.sleep(5000);
 		slf4jLogger.info("Start Attach Domain To LB");
 		int res = this.apiService.attachDomainToLb();
 		if (res != WebStackService.SUCCESS)
@@ -163,7 +138,6 @@ public class Challenge10WebStack extends BaseWebStack {
 		this.callSequence.add("createKeyPair");
 		this.callSequence.add("createInstances");
 		this.callSequence.add("createLB");
-		// this.callSequence.add("addInstancesToLB");
 		this.callSequence.add("setUpLBMonitoring");
 		this.callSequence.add("createCustomLBErrorPage");
 		this.callSequence.add("attachDomainToLb");
@@ -180,6 +154,12 @@ public class Challenge10WebStack extends BaseWebStack {
 
 	@Override
 	void createDomain() throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	void createSSLTermination() throws Exception {
 		// TODO Auto-generated method stub
 		
 	}
