@@ -2,6 +2,7 @@ package model;
 
 import java.util.ArrayList;
 
+import org.jclouds.openstack.cinder.v1.domain.Volume;
 import org.jclouds.openstack.nova.v2_0.domain.Server;
 import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
 import org.jclouds.rackspace.cloudloadbalancers.v1.domain.LoadBalancer;
@@ -17,6 +18,8 @@ public class BaseStackDataModel {
 	protected String cdnUri;
 	
 	protected SSLDataModel sslData;
+	
+	protected ArrayList<Volume> volumes;
 	
 	public BaseStackDataModel()
 	{
@@ -63,6 +66,14 @@ public class BaseStackDataModel {
 
 	public void setSslData(SSLDataModel sslData) {
 		this.sslData = sslData;
+	}
+
+	public ArrayList<Volume> getVolumes() {
+		return volumes;
+	}
+
+	public void setVolumes(ArrayList<Volume> volumes) {
+		this.volumes = volumes;
 	}
 	
 	

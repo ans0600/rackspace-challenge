@@ -27,7 +27,6 @@ public class Challenge11RequestHandler extends Challenge10RequestHandler {
 		this.requestData=new Challenge11RequestDataModel();
 		this.requiredFields=this.requestData.getCompulsoryProperties();
 		this.processCommandArgs(params);
-		//System.err.println(this.getValue("apiKey"));
 		if(this.checkSetParams(this.requestData))
 		{
 			slf4jLogger.info("User Input:");

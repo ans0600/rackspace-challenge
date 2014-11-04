@@ -29,10 +29,10 @@ public class SSLUtil {
 			X509V3CertificateGenerator v3CertGen = new X509V3CertificateGenerator();
 			
 			v3CertGen.setSerialNumber(BigInteger.valueOf(Math.abs(new SecureRandom().nextInt())));
-	        v3CertGen.setIssuerDN(new X509Principal("CN=" + "test123.com" + ", OU=None, O=None L=None, C=None"));
+	        v3CertGen.setIssuerDN(new X509Principal("CN=" + domain + ", OU=None, O=None L=None, C=None"));
 	        v3CertGen.setNotBefore(new Date(System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30));
 	        v3CertGen.setNotAfter(new Date(System.currentTimeMillis() + (1000L * 60 * 60 * 24 * 365*10)));
-	        v3CertGen.setSubjectDN(new X509Principal("CN=" + "test123.com" + ", OU=None, O=None L=None, C=None"));
+	        v3CertGen.setSubjectDN(new X509Principal("CN=" + domain + ", OU=None, O=None L=None, C=None"));
 	        v3CertGen.setPublicKey(KPair.getPublic());
 	        v3CertGen.setSignatureAlgorithm("MD5WithRSAEncryption"); 
 	        

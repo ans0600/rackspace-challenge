@@ -19,30 +19,33 @@ public abstract class BaseWebStack {
 			.getLogger(BaseWebStack.class);
 
 	public final void buildStack() {
-		Class[] param = {};
+		// Class[] param = {};
 		for (int i = step; i < this.callSequence.size(); i++) {
 			try {
 				slf4jLogger.debug("Calling sequence:"
 						+ this.callSequence.get(i));
 				Method method = this.getClass().getDeclaredMethod(
-						this.callSequence.get(i), param);
-				method.invoke(this, null);
+						this.callSequence.get(i));
+				method.invoke(this);
 			} catch (Exception e) {
 				if (e instanceof InvocationTargetException) {
 					InvocationTargetException et = (InvocationTargetException) e;
 					Throwable targetEx = et.getTargetException();
-					
+
 					if (targetEx instanceof WarningException) {
-						slf4jLogger.error("[Warning]Error during process: "+this.callSequence.get(i)+" Messages:"+targetEx.getMessage());
+						slf4jLogger.error("[Warning]Error during process: "
+								+ this.callSequence.get(i) + " Messages:"
+								+ targetEx.getMessage());
 						if (i < this.callSequence.size()) {
 							this.step++;
 							this.buildStack();
 						}
-					}else
-					{
-						slf4jLogger.error("[Fatal]Error during process:"+this.callSequence.get(i)+" Messages:"+targetEx.getMessage());
+					} else {
+						slf4jLogger.error("[Fatal]Error during process:"
+								+ this.callSequence.get(i) + " Messages:"
+								+ targetEx.getMessage());
 					}
-					
+
 				}
 				break;
 			}
@@ -54,25 +57,25 @@ public abstract class BaseWebStack {
 	abstract void createKeyPair() throws Exception;
 
 	abstract void createInstances() throws Exception;
-	
+
 	abstract void attachStorage() throws Exception;
 
 	abstract void createLB() throws Exception;
 
 	abstract void addInstancesToLB() throws Exception;
-	
+
 	abstract void createSSLTermination() throws Exception;
 
 	abstract void setUpLBMonitoring() throws Exception;
 
 	abstract void createCustomLBErrorPage() throws Exception;
-	
+
 	abstract void createDomain() throws Exception;
 
 	abstract void attachDomainToLb() throws Exception;
-	
+
 	abstract void uploadCloudFiles() throws Exception;
-	
+
 	abstract void enableCDN() throws Exception;
 
 	abstract void handleExceptions(Exception e);

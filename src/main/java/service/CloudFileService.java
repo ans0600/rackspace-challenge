@@ -44,14 +44,25 @@ public class CloudFileService extends BaseService {
 		return instance;
 	}
 
-	public int enableCDN()
-	{
-		CDNApi cdnApi = this.cloudFilesApiHandler.getCDNApiForRegion(this.request.getZone());
+	/**
+	 * Enable the CDN of the requested zone
+	 * 
+	 * @return Status of the action
+	 */
+	public int enableCDN() {
+		CDNApi cdnApi = this.cloudFilesApiHandler
+				.getCDNApiForRegion(this.request.getZone());
 		URI cdnUri = cdnApi.enable(this.request.getContainerName());
 		this.stackData.setCdnUri(cdnUri.toString());
 		return SUCCESS;
 	}
-	
+
+	/**
+	 * Upload a given file to CloudFile
+	 * 
+	 * @param filePath Path to target file
+	 * @return Status of the action
+	 */
 	public int upLoadFile(String filePath) {
 		ObjectApi objectApi = this.cloudFilesApiHandler
 				.getObjectApiForRegionAndContainer(this.request.getZone(),
